@@ -7,9 +7,14 @@ from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(BASE_DIR / ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -17,9 +22,9 @@ class Settings(BaseSettings):
     # OpenRouter / LLM
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    llm_model_generation: str = "google/gemma-2-9b-it:free"
-    llm_model_validation: str = "google/gemma-2-9b-it:free"
-    llm_model_query: str = "google/gemma-2-9b-it:free"
+    llm_model_generation: str = "nvidia/nemotron-3-super-120b-a12b:free"
+    llm_model_validation: str = "nvidia/nemotron-3-super-120b-a12b:free"
+    llm_model_query: str = "nvidia/nemotron-3-super-120b-a12b:free"
     openai_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
 

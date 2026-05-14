@@ -74,5 +74,6 @@ class ResponseSynthesizer:
             ]
             response = await model.ainvoke(messages)
             return str(response.content)
-        except Exception:
+        except Exception as e:
+            print(f"LLM Generation Exception: {e}")
             return self._extractive_summary(query, chunks)
