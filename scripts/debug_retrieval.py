@@ -1,5 +1,10 @@
 import asyncio
 import argparse
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from backend.retrieval.hybrid_search import HybridRetriever
 
 async def debug_retrieval(query: str, top_k: int = 5):

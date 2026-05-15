@@ -1,3 +1,5 @@
+import asyncio
+
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from backend.core.config import get_settings
@@ -27,7 +29,9 @@ async def query_understanding_node(state: MedicalGraphState) -> dict:
                     f"USER_MESSAGE:\n{raw_q}"
                 )
             )
-            result: QueryIntent = await structured.ainvoke([sys, hum])
+            result: QueryIntent = await asyncio.wait_for(
+                structured.ainvoke([sys, hum]), timeout=30
+            )
             sq = [raw_q]
             if result.entities:
                 sq.extend(result.entities[:2])

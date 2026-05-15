@@ -1,3 +1,4 @@
+import asyncio
 from typing import List, Dict
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -72,7 +73,7 @@ class ResponseSynthesizer:
                 SystemMessage(content=system_prompt),
                 HumanMessage(content=query),
             ]
-            response = await model.ainvoke(messages)
+            response = await asyncio.wait_for(model.ainvoke(messages), timeout=60)
             return str(response.content)
         except Exception as e:
             print(f"LLM Generation Exception: {e}")

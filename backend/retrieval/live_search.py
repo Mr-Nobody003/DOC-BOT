@@ -65,6 +65,65 @@ async def search_pubmed_journals(query: str, max_results: int = 5) -> List[Dict]
     """Search specific elite medical journals on PubMed on the fly."""
     def _fetch():
         docs = []
+
+        def _add_pubmed_docs(search_query: str, remaining: int) -> None:
+            if remaining <= 0:
+                return
+
+            handle = Entrez.esearch(
+                db="pubmed", term=search_query, retmax=remaining, sort="relevance"
+            )
+            record = Entrez.read(handle)
+            handle.close()
+
+            id_list = record.get("IdList", [])
+            if not id_list:
+                return
+
+            seen_pmids = {
+                str(doc.get("metadata", {}).get("pmid", "")) for doc in docs
+            }
+            new_ids = [pmid for pmid in id_list if str(pmid) not in seen_pmids]
+            if not new_ids:
+                return
+
+            handle = Entrez.efetch(db="pubmed", id=",".join(new_ids), retmode="xml")
+            papers = Entrez.read(handle)
+            handle.close()
+
+            for paper in papers.get("PubmedArticle", []):
+                medline = paper.get("MedlineCitation", {})
+                pmid = str(medline.get("PMID", ""))
+                if pmid in seen_pmids:
+                    continue
+                article = medline.get("Article", {})
+                title = article.get("ArticleTitle", "")
+
+                abstract_texts = []
+                abstract = article.get("Abstract", {})
+                if "AbstractText" in abstract:
+                    for text_part in abstract["AbstractText"]:
+                        abstract_texts.append(str(text_part))
+
+                abstract_str = " ".join(abstract_texts)
+                if not abstract_str:
+                    continue
+
+                journal = article.get("Journal", {}).get("Title", "Unknown Journal")
+                docs.append({
+                    "text": abstract_str,
+                    "score": 0.9 if "random" in abstract_str.lower() else 0.85,
+                    "metadata": {
+                        "source": f"PubMed - {journal}",
+                        "title": title,
+                        "url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
+                        "pmid": pmid
+                    }
+                })
+                seen_pmids.add(pmid)
+                if len(docs) >= max_results:
+                    break
+
         try:
             # Construct a strict PubMed query targeting top journals
             elite_journals = [
@@ -76,50 +135,10 @@ async def search_pubmed_journals(query: str, max_results: int = 5) -> List[Dict]
             ]
             journal_filter = " OR ".join(elite_journals)
             full_query = f"({query}) AND ({journal_filter})"
-            
-            # Step 1: Search to get PMIDs
-            handle = Entrez.esearch(db="pubmed", term=full_query, retmax=max_results, sort="relevance")
-            record = Entrez.read(handle)
-            handle.close()
-            
-            id_list = record.get("IdList", [])
-            if not id_list:
-                return []
-                
-            # Step 2: Fetch the summaries/abstracts
-            handle = Entrez.efetch(db="pubmed", id=",".join(id_list), retmode="xml")
-            papers = Entrez.read(handle)
-            handle.close()
-            
-            for paper in papers.get("PubmedArticle", []):
-                medline = paper.get("MedlineCitation", {})
-                pmid = str(medline.get("PMID", ""))
-                article = medline.get("Article", {})
-                title = article.get("ArticleTitle", "")
-                
-                # Extract abstract
-                abstract_texts = []
-                abstract = article.get("Abstract", {})
-                if "AbstractText" in abstract:
-                    for text_part in abstract["AbstractText"]:
-                        abstract_texts.append(str(text_part))
-                
-                abstract_str = " ".join(abstract_texts)
-                if not abstract_str:
-                    continue # Skip if no abstract available
-                    
-                journal = article.get("Journal", {}).get("Title", "Unknown Journal")
-                
-                docs.append({
-                    "text": abstract_str,
-                    "score": 0.85,
-                    "metadata": {
-                        "source": f"PubMed - {journal}",
-                        "title": title,
-                        "url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
-                        "pmid": pmid
-                    }
-                })
+
+            _add_pubmed_docs(full_query, max_results)
+            if len(docs) < max_results:
+                _add_pubmed_docs(query, max_results - len(docs))
         except Exception as e:
             print(f"PubMed live search failed: {e}")
         return docs

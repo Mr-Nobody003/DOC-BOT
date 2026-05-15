@@ -8,7 +8,7 @@ def _dense_retrieval_enabled() -> bool:
     enabled = os.getenv("DOCBOT_ENABLE_DENSE_RETRIEVAL", "").lower()
     if enabled in {"1", "true", "yes", "on"}:
         return True
-    if os.getenv("VERCEL"):
+    if enabled in {"0", "false", "no", "off"}:
         return False
     return True
 
@@ -26,7 +26,7 @@ async def _safe_dense_retrieve(
         from backend.retrieval.hybrid_search import HybridRetriever
 
         retriever = HybridRetriever()
-        await asyncio.wait_for(retriever.store.initialize_collection(), timeout=5)
+        await asyncio.wait_for(retriever.store.initialize_collection(), timeout=10)
         docs = await asyncio.wait_for(
             retriever.retrieve(
                 query,
@@ -34,7 +34,7 @@ async def _safe_dense_retrieve(
                 evidence_types=evidence_types,
                 publication_year_min=publication_year_min,
             ),
-            timeout=10,
+            timeout=45,
         )
         return docs, None
     except Exception as exc:
@@ -63,8 +63,8 @@ async def retrieval_agent_node(state: MedicalGraphState) -> dict:
         evidence_types=et,
         publication_year_min=pub_year_min,
     )
-    wiki_task = _safe_live_retrieve("Wikipedia", search_wikipedia(q, max_results=2), 6)
-    pubmed_task = _safe_live_retrieve("PubMed", search_pubmed_journals(q, max_results=4), 8)
+    wiki_task = _safe_live_retrieve("Wikipedia", search_wikipedia(q, max_results=1), 6)
+    pubmed_task = _safe_live_retrieve("PubMed", search_pubmed_journals(q, max_results=8), 12)
     
     results = await asyncio.gather(qdrant_task, wiki_task, pubmed_task)
     
@@ -76,6 +76,6 @@ async def retrieval_agent_node(state: MedicalGraphState) -> dict:
             errors.append(source_error)
         
     patch = {"retrieved_docs": docs}
-    if errors:
+    if errors and not docs:
         patch["retrieval_errors"] = errors
     return patch

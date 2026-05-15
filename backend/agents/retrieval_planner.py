@@ -1,3 +1,5 @@
+import asyncio
+
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from backend.core.config import get_settings
@@ -27,7 +29,9 @@ async def retrieval_planner_node(state: MedicalGraphState) -> dict:
                     f"MeSH hints: {', '.join(state.get('mesh_terms') or [])}\n"
                 )
             )
-            plan: RetrievalPlan = await structured.ainvoke([sys, hum])
+            plan: RetrievalPlan = await asyncio.wait_for(
+                structured.ainvoke([sys, hum]), timeout=30
+            )
             pub_year_min = None
             if plan.temporal_filter_years:
                 from datetime import datetime, timezone

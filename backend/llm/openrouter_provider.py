@@ -1,3 +1,5 @@
+import asyncio
+
 from langchain_openai import ChatOpenAI
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -18,6 +20,8 @@ class OpenRouterProvider:
             temperature=temperature,
             api_key=self.api_key,
             base_url=self.base_url,
+            timeout=60,
+            max_retries=1,
             default_headers={
                 "HTTP-Referer": "http://localhost:3000",
                 "X-Title": "Medical Evidence Retrieval",
@@ -27,5 +31,5 @@ class OpenRouterProvider:
     async def generate(self, prompt: str, system_prompt: str) -> str:
         model = self.get_model(temperature=0.0)
         messages = [SystemMessage(content=system_prompt), HumanMessage(content=prompt)]
-        resp = await model.ainvoke(messages)
+        resp = await asyncio.wait_for(model.ainvoke(messages), timeout=60)
         return str(resp.content)
