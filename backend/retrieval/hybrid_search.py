@@ -73,7 +73,8 @@ class HybridRetriever:
             evidence_types=evidence_types, publication_year_min=publication_year_min
         )
 
-        search_result = await self.store.client.query_points(
+        client = await self.store._get_client()
+        search_result = await client.query_points(
             collection_name=self.store.collection_name,
             query=query_vector,
             limit=max(top_k * 4, 16),
