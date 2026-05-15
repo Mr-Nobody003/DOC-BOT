@@ -10,11 +10,7 @@ async def init_postgres_pool() -> asyncpg.Pool:
     if _pool is None:
         settings = get_settings()
         _pool = await asyncpg.create_pool(
-            user=settings.postgres_user,
-            password=settings.postgres_password,
-            database=settings.postgres_db,
-            host=settings.postgres_host,
-            port=settings.postgres_port,
+            dsn=settings.get_postgres_dsn,
         )
     return _pool
 

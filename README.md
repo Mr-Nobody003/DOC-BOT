@@ -76,3 +76,36 @@ The project includes an integrated direct-graph test suite to bypass FastAPI net
 $env:PYTHONPATH="."
 python scripts/debug_graph.py
 ```
+
+## Deployment (Vercel)
+
+This project is configured for a **Dual-Project Vercel Deployment**. The Next.js frontend and the FastAPI backend must be deployed as two separate projects on Vercel.
+
+### Do I need Docker on Vercel?
+**No. Vercel is a serverless environment and does not run Docker containers.** 
+The `docker-compose.yml` file is strictly for **local development**. When deploying to Vercel, you cannot use local Docker containers for Redis, Postgres, Qdrant, or MinIO. Instead, you must provision managed cloud alternatives for these services and provide their connection strings as Environment Variables to your Vercel backend deployment.
+Examples:
+- **Redis**: Upstash
+- **Postgres**: Neon, Supabase
+- **Qdrant**: Qdrant Cloud
+- **MinIO/S3**: AWS S3, Cloudflare R2
+
+### Deployment Steps
+
+#### 1. Backend Deployment
+1. Import your repository into Vercel.
+2. Name the project `doc-bot-backend`.
+3. Set the **Framework Preset** to `Other`.
+4. Set the **Root Directory** to `backend`.
+5. Vercel will automatically detect the `vercel.json` and `requirements.txt` inside the `backend` folder and build the Python serverless functions.
+6. Add all necessary environment variables (Cloud Redis, Cloud Qdrant, etc.) in the Vercel dashboard.
+7. **Note on Size Limits:** Vercel limits serverless functions to 250MB (500MB for Pro). Heavy ML libraries like `sentence-transformers` install `torch`. We have configured the `requirements.txt` to install the CPU-only version of PyTorch to minimize size, but if it still exceeds limits, you may need to rely exclusively on API-based models or lighter embeddings like `fastembed`.
+
+#### 2. Frontend Deployment
+1. Import the same repository into Vercel again as a new project.
+2. Name the project `doc-bot-frontend`.
+3. Set the **Framework Preset** to `Next.js`.
+4. Set the **Root Directory** to `frontend`.
+5. In the Environment Variables section, add:
+   - `NEXT_PUBLIC_API_URL`: Set this to the URL of your deployed Vercel backend (e.g., `https://doc-bot-backend.vercel.app`).
+6. Deploy.

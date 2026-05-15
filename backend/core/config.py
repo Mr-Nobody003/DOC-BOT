@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     postgres_db: str = "medical_db"
     postgres_user: str = "medical_user"
     postgres_password: str = "medical_password"
+    postgres_dsn: Optional[str] = None
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"
@@ -44,6 +45,8 @@ class Settings(BaseSettings):
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
     qdrant_collection: str = "medical_evidence"
+    qdrant_client_api_endpoint: Optional[str] = None
+    qdrant_client_api_key: Optional[str] = None
 
     # MinIO
     minio_endpoint: str = "localhost:9000"
@@ -79,7 +82,9 @@ class Settings(BaseSettings):
         return v.upper()
 
     @property
-    def postgres_dsn(self) -> str:
+    def get_postgres_dsn(self) -> str:
+        if self.postgres_dsn:
+            return self.postgres_dsn
         return (
             f"postgresql://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
