@@ -97,9 +97,9 @@ Examples:
 2. Name the project `doc-bot-backend`.
 3. Set the **Framework Preset** to `Other`.
 4. Set the **Root Directory** to `backend`.
-5. Vercel will automatically detect the `vercel.json` and `requirements.txt` inside the `backend` folder and build the Python serverless functions.
+5. Vercel will automatically detect the Python project files inside the `backend` folder and build the Python serverless functions.
 6. Add all necessary environment variables (Cloud Redis, Cloud Qdrant, etc.) in the Vercel dashboard.
-7. **Note on Size Limits:** Vercel limits serverless functions to 250MB (500MB for Pro). Heavy ML libraries like `sentence-transformers` install `torch`. We have configured the `requirements.txt` to install the CPU-only version of PyTorch to minimize size, but if it still exceeds limits, you may need to rely exclusively on API-based models or lighter embeddings like `fastembed`.
+7. **Note on Size Limits:** Vercel limits serverless functions to 250MB (500MB for Pro). Keep heavyweight ML libraries like `sentence-transformers` and `torch` out of the serverless dependency set; this backend uses lighter `fastembed`/ONNX-based retrieval dependencies instead.
 
 #### 2. Frontend Deployment
 1. Import the same repository into Vercel again as a new project.
