@@ -45,6 +45,17 @@ async def add_request_id(request: Request, call_next):
     return response
 
 
+@app.get("/", tags=["health"])
+async def root():
+    return {
+        "status": "running",
+        "service": "Medical Evidence Retrieval API",
+        "version": app.version,
+        "health": "/health",
+        "docs": "/docs",
+    }
+
+
 app.include_router(health_router)
 app.include_router(chat_router)
 app.include_router(feedback_router)
