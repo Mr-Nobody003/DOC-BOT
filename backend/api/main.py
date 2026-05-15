@@ -1,9 +1,18 @@
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
+import sys
+import types
 
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+
+
+if "backend" not in sys.modules:
+    backend_package = types.ModuleType("backend")
+    backend_package.__path__ = [str(Path(__file__).resolve().parents[1])]
+    sys.modules["backend"] = backend_package
 
 from backend.api.chat import router as chat_router
 from backend.api.citations import router as citations_router
