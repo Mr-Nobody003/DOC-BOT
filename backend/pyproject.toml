@@ -30,6 +30,8 @@ dependencies = [
     "lxml>=5.2.0",
     "langchain-text-splitters>=0.2.0",
     "sentence-transformers>=2.7.0",
+    "wikipedia>=1.4.0",
+    "biopython>=1.83",
 ]
 
 [project.optional-dependencies]

@@ -8,19 +8,10 @@ _ce_disabled: bool = False
 
 
 def _get_cross_encoder() -> Any:
-    global _ce_model, _ce_disabled
-    if _ce_disabled:
-        return None
-    if _ce_model is not None:
-        return _ce_model
-    try:
-        from sentence_transformers import CrossEncoder
-
-        _ce_model = CrossEncoder("BAAI/bge-reranker-v2-m3")
-        return _ce_model
-    except Exception:
-        _ce_disabled = True
-        return None
+    # Hard-disabled to prevent 10 minute 2.2GB weight downloads locally
+    global _ce_disabled
+    _ce_disabled = True
+    return None
 
 
 async def score_pairs(

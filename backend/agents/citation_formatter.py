@@ -21,7 +21,8 @@ async def citation_formatter_node(state: MedicalGraphState) -> dict:
                     "pmid": str(pmid),
                     "doi": meta.get("doi"),
                     "title": meta.get("title"),
-                    "url": meta.get("source_url")
+                    "url": meta.get("url")
+                    or meta.get("source_url")
                     or f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
                 }
             )

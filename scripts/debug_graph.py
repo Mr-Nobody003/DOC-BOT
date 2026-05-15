@@ -19,6 +19,8 @@ QUERIES = [
     "Does low-dose aspirin reduce major cardiovascular events in primary prevention cohorts?",
     "Are there any studies on the efficacy of clofoctol for bacterial infections?",
     "What is the capital of France?",
+    "what is the differential diagnostic of a patient complains of fatigue and low energy ?",
+    "What are the Symptoms of Malaria ?"
 ]
 
 

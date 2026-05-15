@@ -10,11 +10,19 @@ This system utilizes a highly modular LangGraph workflow to enforce **strict med
 
 1. **Query Understanding**: Classifies user intent and determines if the query is too vague (triggering a clarification interrupt).
 2. **MeSH Translation**: Expands clinical queries using NIH E-utilities for robust retrieval.
-3. **Retrieval**: Leverages Qdrant (Hybrid Search) and BAAI/bge-large embeddings to fetch medical chunks.
-4. **Reranking**: Uses cross-encoder reranking (`BAAI/bge-reranker-large` or fallback) to ensure top precision.
+3. **Retrieval**: Leverages a multi-pronged approach concurrently fetching from:
+   - Local Qdrant (Hybrid Search)
+   - Live Wikipedia API
+   - Live PubMed Elite Journals (Lancet, BMJ, Nature, JAMA)
+4. **Reranking**: Uses local `fastembed` ONNX models or lightweight sorting to instantly prioritize elite evidence while dropping irrelevant web chunks.
 5. **Validation**: Deterministically evaluates semantic similarity and chunk count before generating a response.
-6. **Grounded Generation**: Restricts the LLM exclusively to the injected evidence context.
-7. **Citation Formatting & Audit Logging**: Maps all claims back to their exact PMIDs and logs the transaction.
+6. **Grounded Generation**: Restricts the LLM exclusively to the injected evidence context, preventing hallucination.
+7. **Citation Formatting**: Generates inline clickable citations pointing back to Wikipedia or PubMed URLs.
+
+### User Interface
+
+- A fluid, ChatGPT/Gemini-style Next.js application with dark mode support.
+- Features a live **Vertical Timeline** that visually traces the LangGraph execution steps as they happen.
 
 ## Infrastructure Stack
 
