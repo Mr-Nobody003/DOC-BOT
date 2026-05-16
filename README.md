@@ -1,111 +1,100 @@
-# Medical Evidence Retrieval Platform
+# DOC-BOT: Medical Evidence Retrieval Platform
 
 A production-grade, multi-agent medical evidence retrieval and clinical research assistant built with LangGraph, FastAPI, Qdrant, and Next.js.
 
-## Architecture Overview
+---
+
+## 🧠 The AI Pipeline & Working
 
 This system utilizes a highly modular LangGraph workflow to enforce **strict medical evidence grounding**. It never hallucinates, never invents citations, and relies entirely on a deterministic multi-pass validation architecture.
 
-### The Pipeline
-
-1. **Query Understanding**: Classifies user intent and determines if the query is too vague (triggering a clarification interrupt).
+1. **Query Understanding**: Classifies user intent and determines if the query is too vague.
 2. **MeSH Translation**: Expands clinical queries using NIH E-utilities for robust retrieval.
-3. **Retrieval**: Leverages a multi-pronged approach concurrently fetching from:
-   - Local Qdrant (Hybrid Search)
-   - Live Wikipedia API
-   - Live PubMed Elite Journals (Lancet, BMJ, Nature, JAMA)
-4. **Reranking**: Uses local `fastembed` ONNX models or lightweight sorting to instantly prioritize elite evidence while dropping irrelevant web chunks.
-5. **Validation**: Deterministically evaluates semantic similarity and chunk count before generating a response.
-6. **Grounded Generation**: Restricts the LLM exclusively to the injected evidence context, preventing hallucination.
-7. **Citation Formatting**: Generates inline clickable citations pointing back to Wikipedia or PubMed URLs.
+3. **Multi-Source Retrieval**: Concurrently fetches data from:
+   - **Qdrant Vector Database:** Fast, dense retrieval of pre-ingested medical abstracts.
+   - **Live Wikipedia API:** Real-time medical definitions.
+   - **Live PubMed API:** Real-time search against elite journals (Lancet, BMJ, Nature, JAMA).
+4. **Validation**: Evaluates semantic similarity and chunk count before generating a response.
+5. **Grounded Generation**: Restricts the LLM exclusively to the injected evidence context, preventing hallucination.
 
-### User Interface
+---
 
-- A fluid, ChatGPT/Gemini-style Next.js application with dark mode support.
-- Features a live **Vertical Timeline** that visually traces the LangGraph execution steps as they happen.
+## ❓ The Feedback Mechanism (Thumbs Up/Down)
 
-## Infrastructure Stack
+### Why does the project ask for feedback?
+In production AI systems, user feedback (thumbs up / thumbs down) is critical for **RLHF (Reinforcement Learning from Human Feedback)** and quality monitoring. If an AI gives a bad medical response, doctors or users can rate it negatively. The backend stores this rating, the `session_id`, and the exact `trace_id` of the LLM execution in the Postgres database so developers can debug exactly *why* the AI failed.
 
-- **Backend**: Python 3.12, FastAPI, LangGraph, ARQ (Async Redis Workers)
-- **Frontend**: Next.js 14, Tailwind CSS, TypeScript
-- **Database Layer**:
-  - **Qdrant**: Vector storage and hybrid search
-  - **Postgres**: Audit logging and relational storage
-  - **Redis**: Caching and LangGraph Checkpointing
-  - **MinIO**: Object storage for unstructured medical PDFs
+### Why is there no feedback on the frontend?
+The backend developers built the `/feedback` API endpoint and the Postgres database logic in anticipation of this feature. However, **the frontend UI developers have not yet built the thumbs up/down buttons** in the React/Next.js application. 
 
-## Getting Started
+Because the frontend never calls this API, the `medical_feedback` database table is never created (the backend is designed to create the table dynamically the very first time a rating is submitted). This is why your Supabase database currently shows 0 tables!
 
-### 1. Start Infrastructure
+---
 
-```bash
-docker compose up -d
-```
+## 🌿 Branch Strategy: Local vs. Deployed
 
-### 2. Configure Environment
+This project uses a dual-environment strategy, separated by Git branches.
 
-Copy the `.env.example` file to `.env` in the `backend/` directory:
+### 1. `origin/main` (The Local Workflow)
+The `main` branch is designed for **Local Development**. It relies heavily on Docker to spin up the infrastructure on your personal computer. 
+*   **Infrastructure:** Uses `docker-compose.yml` to spin up local instances of Postgres, Redis, Qdrant, and MinIO.
+*   **Workflow:** You run the backend and frontend locally on `localhost:8000` and `localhost:3000`.
+*   **Timeouts:** No strict timeouts. The local server will process complex AI graphs for as long as it takes.
 
-```bash
-cp backend/.env.example backend/.env
-```
+### 2. `deploy` (The Cloud Workflow)
+The `deploy` branch contains the exact same AI logic as `main`, but is heavily optimized for **Serverless Cloud Deployment (Vercel)**.
+*   **Infrastructure:** Docker is completely ignored. Instead, the app connects to managed cloud services (Supabase, Upstash Redis, Qdrant Cloud).
+*   **Workflow:** Deployed as two separate projects on Vercel (one for the FastAPI backend, one for the Next.js frontend).
+*   **Timeouts:** Because Vercel's Free Hobby Plan forcibly terminates functions after **60 seconds**, the `deploy` branch includes highly specific logic (in `vercel.json` and `retrieval.py`) to aggressively time-out the Qdrant (50s) and PubMed (45s) retrieval steps so the app doesn't crash with a `504 Gateway Timeout`.
 
-Ensure you set an `OPENROUTER_API_KEY` (or `OPENAI_API_KEY`). The system currently defaults to `google/gemma-2-9b-it:free`.
+---
 
-### 3. Start Backend
+## 💻 Local Setup Instructions (For `main` branch)
 
+1. **Start Local Infrastructure:**
+   ```bash
+   docker compose up -d
+   ```
+2. **Configure `.env`:** Copy `.env.example` to `backend/.env` and add your `OPENROUTER_API_KEY`.
+3. **Start Backend:**
+   ```powershell
+   pip install -e ".\backend[dev]"
+   $env:PYTHONPATH="."
+   python -m uvicorn backend.api.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+4. **Start Frontend:**
+   ```powershell
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+---
+
+## ☁️ Cloud Deployment Instructions (For `deploy` branch)
+
+### 1. Cloud Dependencies Setup
+Before deploying to Vercel, you must set up the following free cloud services and place their connection strings in your `backend/.env` file:
+*   **Postgres (Supabase):** Provides the `POSTGRES_DSN` for the feedback database.
+*   **Redis (Upstash):** Provides `UPSTASH_REDIS_REST_URL` and `REDIS_URL` for caching and LangGraph state.
+*   **Vector DB (Qdrant Cloud):** Provides `QDRANT_CLIENT_API_ENDPOINT` and `QDRANT_CLIENT_API_KEY` for vector storage.
+
+### 2. Vercel Backend Deployment
+1. Import your repository into Vercel. Name it `doc-bot-backend`.
+2. Set **Framework Preset** to `Other` and **Root Directory** to `backend`.
+3. Add all your Cloud Environment Variables in the Vercel dashboard.
+4. Deploy. (Vercel will read `vercel.json` and deploy it as Python Serverless Functions).
+
+### 3. Vercel Frontend Deployment
+1. Import the repository into Vercel again. Name it `doc-bot-frontend`.
+2. Set **Framework Preset** to `Next.js` and **Root Directory** to `frontend`.
+3. Add the `NEXT_PUBLIC_API_URL` environment variable, pointing to your deployed Vercel backend URL.
+4. Deploy.
+
+### 4. Cloud Data Ingestion
+To populate your Qdrant Cloud vector database with the most commonly searched medical queries (so inference is fast), run the cloud ingestion script locally on your computer:
 ```powershell
-pip install -e ".\backend[dev]"
 $env:PYTHONPATH="."
-python -m uvicorn backend.api.main:app --reload --host 0.0.0.0 --port 8000
+python scripts/ingest_qdrant_cloud.py core
 ```
-
-### 4. Start Frontend
-
-```powershell
-cd frontend
-npm install
-npm run dev
-```
-
-## Testing
-
-The project includes an integrated direct-graph test suite to bypass FastAPI networking for quick debugging:
-
-```powershell
-$env:PYTHONPATH="."
-python scripts/debug_graph.py
-```
-
-## Deployment (Vercel)
-
-This project is configured for a **Dual-Project Vercel Deployment**. The Next.js frontend and the FastAPI backend must be deployed as two separate projects on Vercel.
-
-### Do I need Docker on Vercel?
-**No. Vercel is a serverless environment and does not run Docker containers.** 
-The `docker-compose.yml` file is strictly for **local development**. When deploying to Vercel, you cannot use local Docker containers for Redis, Postgres, Qdrant, or MinIO. Instead, you must provision managed cloud alternatives for these services and provide their connection strings as Environment Variables to your Vercel backend deployment.
-Examples:
-- **Redis**: Upstash
-- **Postgres**: Neon, Supabase
-- **Qdrant**: Qdrant Cloud
-- **MinIO/S3**: AWS S3, Cloudflare R2
-
-### Deployment Steps
-
-#### 1. Backend Deployment
-1. Import your repository into Vercel.
-2. Name the project `doc-bot-backend`.
-3. Set the **Framework Preset** to `Other`.
-4. Set the **Root Directory** to `backend`.
-5. Vercel will automatically detect the Python project files inside the `backend` folder and build the Python serverless functions.
-6. Add all necessary environment variables (Cloud Redis, Cloud Qdrant, etc.) in the Vercel dashboard.
-7. **Note on Size Limits:** Vercel limits serverless functions to 250MB (500MB for Pro). Keep heavyweight ML libraries like `sentence-transformers` and `torch` out of the serverless dependency set; this backend uses lighter `fastembed`/ONNX-based retrieval dependencies instead.
-
-#### 2. Frontend Deployment
-1. Import the same repository into Vercel again as a new project.
-2. Name the project `doc-bot-frontend`.
-3. Set the **Framework Preset** to `Next.js`.
-4. Set the **Root Directory** to `frontend`.
-5. In the Environment Variables section, add:
-   - `NEXT_PUBLIC_API_URL`: Set this to the URL of your deployed Vercel backend (e.g., `https://doc-bot-backend.vercel.app`).
-6. Deploy.
+*(This consumes roughly ~50MB of your 1GB free Qdrant tier).*

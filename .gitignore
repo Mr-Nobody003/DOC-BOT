@@ -60,3 +60,6 @@ frontend/.nuxt/
 frontend/.next/
 frontend/dist/
 frontend/docs/
+
+#scripts
+scripts/

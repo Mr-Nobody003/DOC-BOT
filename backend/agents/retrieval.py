@@ -43,7 +43,7 @@ async def _safe_dense_retrieve(
                 evidence_types=evidence_types,
                 publication_year_min=publication_year_min,
             ),
-            timeout=25,  # Reduced from 45s for Vercel constraints
+            timeout=50,  # Increased to utilize maximum Vercel limit
         )
         logger.info(f"Dense retrieval: found {len(docs)} docs")
         return docs, None
@@ -79,14 +79,14 @@ async def retrieval_agent_node(state: MedicalGraphState) -> dict:
         et = None
     pub_year_min = plan.get("publication_year_min")
     
-    # Launch all retrievals concurrently (but with shorter timeouts)
+    # Launch all retrievals concurrently (with increased timeouts for comprehensive search)
     qdrant_task = _safe_dense_retrieve(
         q,
         evidence_types=et,
         publication_year_min=pub_year_min,
     )
-    wiki_task = _safe_live_retrieve("Wikipedia", search_wikipedia(q, max_results=1), 5)
-    pubmed_task = _safe_live_retrieve("PubMed", search_pubmed_journals(q, max_results=6), 10)
+    wiki_task = _safe_live_retrieve("Wikipedia", search_wikipedia(q, max_results=2), 20)
+    pubmed_task = _safe_live_retrieve("PubMed", search_pubmed_journals(q, max_results=8), 45)
     
     results = await asyncio.gather(qdrant_task, wiki_task, pubmed_task)
     
