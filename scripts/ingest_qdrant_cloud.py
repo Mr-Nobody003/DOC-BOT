@@ -130,18 +130,110 @@ async def ingest_multiple_queries(queries: List[str], max_pmids_per_query: int =
         await asyncio.sleep(1)  # Small delay between queries to avoid rate limiting
 
 
+# Comprehensive medical queries covering ~80% of common medical questions
+# Optimized for 1GB Qdrant Cloud storage (20-25 articles per query)
+MEDICAL_QUERIES_COMPREHENSIVE = [
+    # Oncology (6 queries)
+    "cancer treatment clinical trials",
+    "chemotherapy adverse effects",
+    "immunotherapy cancer",
+    "radiation therapy side effects",
+    "glioblastoma multiforme therapy",
+    "lung cancer treatment",
+    
+    # Cardiology (6 queries)
+    "cardiovascular disease prevention",
+    "heart failure management",
+    "hypertension treatment",
+    "atrial fibrillation therapy",
+    "coronary artery disease",
+    "myocardial infarction management",
+    
+    # Endocrinology (5 queries)
+    "diabetes management therapy",
+    "type 2 diabetes treatment",
+    "insulin resistance",
+    "thyroid disease treatment",
+    "obesity management interventions",
+    
+    # Infectious Diseases (5 queries)
+    "bacterial infection antibiotics",
+    "viral infection treatment",
+    "antibiotic resistance management",
+    "COVID-19 clinical management",
+    "sepsis treatment protocols",
+    
+    # Neurology (5 queries)
+    "Alzheimer's disease treatment",
+    "Parkinson's disease management",
+    "migraine prevention therapy",
+    "epilepsy seizure control",
+    "stroke rehabilitation therapy",
+    
+    # Rheumatology (4 queries)
+    "rheumatoid arthritis treatment",
+    "systemic lupus erythematosus management",
+    "osteoarthritis therapy",
+    "gout management treatment",
+    
+    # Gastroenterology (4 queries)
+    "inflammatory bowel disease treatment",
+    "Crohn's disease management",
+    "ulcerative colitis therapy",
+    "gastric ulcer treatment",
+    
+    # Pulmonology (4 queries)
+    "chronic obstructive pulmonary disease",
+    "asthma control therapy",
+    "pulmonary fibrosis treatment",
+    "sleep apnea management",
+    
+    # Nephrology (3 queries)
+    "chronic kidney disease management",
+    "acute kidney injury treatment",
+    "hypertension in renal disease",
+    
+    # Psychiatry (4 queries)
+    "depression treatment therapy",
+    "anxiety disorder management",
+    "bipolar disorder treatment",
+    "schizophrenia antipsychotic therapy",
+    
+    # Pain Management (3 queries)
+    "chronic pain management",
+    "fibromyalgia treatment",
+    "neuropathic pain therapy",
+    
+    # General (2 queries)
+    "fever management treatment",
+    "antibiotic prophylaxis guidelines",
+]
+
+
 if __name__ == "__main__":
     import os
     
-    # Single query
+    # Single query from command line
     if len(sys.argv) > 1:
-        query = " ".join(sys.argv[1:])
-        asyncio.run(ingest_pubmed_to_qdrant_cloud(query=query, max_pmids=50))
+        if sys.argv[1].lower() == "all":
+            # Ingest all comprehensive queries
+            logger.info(f"🚀 Starting comprehensive ingestion ({len(MEDICAL_QUERIES_COMPREHENSIVE)} queries)...")
+            asyncio.run(ingest_multiple_queries(MEDICAL_QUERIES_COMPREHENSIVE, max_pmids_per_query=20))
+        elif sys.argv[1].lower() == "core":
+            # Ingest only core queries (faster)
+            core_queries = MEDICAL_QUERIES_COMPREHENSIVE[:15]
+            logger.info(f"🚀 Starting core ingestion ({len(core_queries)} queries)...")
+            asyncio.run(ingest_multiple_queries(core_queries, max_pmids_per_query=20))
+        else:
+            # Single custom query
+            query = " ".join(sys.argv[1:])
+            asyncio.run(ingest_pubmed_to_qdrant_cloud(query=query, max_pmids=50))
     else:
-        # Default: ingest multiple queries
-        queries = [
-            "cancer treatment clinical trials",
-            "diabetes management therapy",
-            "cardiovascular disease prevention",
-        ]
-        asyncio.run(ingest_multiple_queries(queries, max_pmids_per_query=30))
+        # Default: ingest comprehensive queries
+        logger.info(f"🚀 Starting comprehensive ingestion ({len(MEDICAL_QUERIES_COMPREHENSIVE)} queries)...")
+        logger.info("💡 Usage:")
+        logger.info("  python ingest_qdrant_cloud.py all          # Ingest all medical queries")
+        logger.info("  python ingest_qdrant_cloud.py core         # Ingest core queries only")
+        logger.info("  python ingest_qdrant_cloud.py 'your query' # Ingest custom query")
+        logger.info("")
+        asyncio.run(ingest_multiple_queries(MEDICAL_QUERIES_COMPREHENSIVE, max_pmids_per_query=20))
