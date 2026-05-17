@@ -643,3 +643,11 @@ python scripts/ingest_qdrant_cloud.py core
 - In Vercel, set `DOCBOT_ENABLE_DENSE_RETRIEVAL=1` only when Qdrant Cloud credentials are configured and ingestion has populated the collection.
 - The chat API streams progress, so frontend behavior depends on the SSE event format in `backend/api/chat.py`.
 - Medical responses should be independently verified. The assistant is evidence-oriented, not a clinical authority.
+
+
+---
+
+
+## System Design, Architecture and Workflows Diagrams
+![system design and workflows](assets/readme/diagrams/Untitled-2026-01-18-2344.svg)
+
