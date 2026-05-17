@@ -60,3 +60,10 @@ frontend/.nuxt/
 frontend/.next/
 frontend/dist/
 frontend/docs/
+pytest.ini
+DEPLOY_SYNC_PLAN.md
+DEPLOYMENT_READY.md
+QDRANT_CLOUD_SETUP.md
+scripts/test_pg.py
+STORAGE_STRATEGY.md
+scripts/validate_deploy.py
