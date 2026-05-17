@@ -73,3 +73,9 @@ async def event_generator(payload: ChatRequest) -> AsyncGenerator[dict, None]:
 @router.post("/chat")
 async def chat_endpoint(request: ChatRequest):
     return EventSourceResponse(event_generator(request))
+
+
+@router.get("/warmup")
+async def warmup_endpoint():
+    get_graph()
+    return {"status": "warm"}

@@ -104,8 +104,11 @@ export function MedicalChat({ apiBase }: ChatProps) {
   const [busy, setBusy] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const hasWarmedBackendRef = useRef(false);
 
   const url = `${apiBase.replace(/\/$/, "")}/chat`;
+  const warmupUrl = `${apiBase.replace(/\/$/, "")}/warmup`;
+  const healthUrl = `${apiBase.replace(/\/$/, "")}/health`;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -114,6 +117,37 @@ export function MedicalChat({ apiBase }: ChatProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    if (hasWarmedBackendRef.current) return;
+    hasWarmedBackendRef.current = true;
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 8000);
+
+    fetch(warmupUrl, {
+      method: "GET",
+      cache: "no-store",
+      signal: controller.signal,
+    }).catch(async () => {
+      try {
+        await fetch(healthUrl, {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+      } catch {
+        // Best-effort warm-up only; the first real chat request still handles errors.
+      }
+    }).finally(() => {
+      window.clearTimeout(timeout);
+    });
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [healthUrl, warmupUrl]);
 
   const handleSubmit = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault();
