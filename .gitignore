@@ -63,3 +63,13 @@ frontend/docs/
 
 #scripts
 scripts/
+
+# Unnecessary markdown documents
+*.md
+!README.md
+!backend/README.md
+
+# Tests and testing configurations
+tests/
+pytest.ini
+.pytest_cache/
