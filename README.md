@@ -11,6 +11,32 @@ This repository is not a generic chatbot. The graph is built around medical evid
 
 ---
 
+## Deployed Response Previews
+
+GitHub does not render PDF pages inline inside a README, so the deployment captures are stored as PNG previews under `assets/readme/previews/`. These examples show how the deployed assistant responds to different prompts, including normal evidence retrieval, issue cases, and false-information handling.
+
+### Standard Evidence Response
+
+![Medical Evidence Assistant deployed response preview](assets/readme/previews/01-medical-evidence-assistant.png)
+
+### Prompt Variation 1
+
+![Medical Evidence Assistant deployed response preview variation 1](assets/readme/previews/02-medical-evidence-assistant-1.png)
+
+### Prompt Variation 2
+
+![Medical Evidence Assistant deployed response preview variation 2](assets/readme/previews/03-medical-evidence-assistant-2.png)
+
+### Issue Case
+
+![Medical Evidence Assistant deployed issue response preview](assets/readme/previews/04-medical-evidence-assistant-issue.png)
+
+### False-Information Handling
+
+![Medical Evidence Assistant false-information handling preview](assets/readme/previews/05-medical-evidence-assistant-false-info.png)
+
+---
+
 ## Architecture Overview
 
 ```text
